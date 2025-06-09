@@ -8,7 +8,7 @@ function App() {
   const [image, setImage] = useState(null);
 
   const handleGenerate = async () => {
-    const res = await fetch('https://your-backend-url.onrender.com/api/generate', { ... })
+    const res = await fetch('YOUR_BACKEND_URL/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt })
