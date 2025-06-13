@@ -1,47 +1,68 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import "./App.css";
 
 function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
+  const chatRef = useRef(null);
+
+  useEffect(() => {
+    chatRef.current?.scrollTo(0, chatRef.current.scrollHeight);
+  }, [messages]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
-    setMessages([...messages, { role: "user", content: input }]);
-    setLoading(true);
-    const res = await fetch("https://back-end-done.onrender.com/api/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: input })
-    });
-    const data = await res.json();
-    if (data.text) setMessages(msgs => [...msgs, { role: "assistant", content: data.text }]);
-    if (data.image_url) setImage(data.image_url);
+    const userMsg = { role: "user", content: input };
+    setMessages(prev => [...prev, userMsg]);
     setInput("");
+    setLoading(true);
+    try {
+      const res = await fetch("https://back-end-done.onrender.com/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: input })
+      });
+      const data = await res.json();
+      const botMsg = {
+        role: "assistant",
+        content: data.text || "",
+        image_url: data.image_url || null
+      };
+      setMessages(prev => [...prev, botMsg]);
+    } catch (e) {
+      console.error("Error generating:", e);
+    }
     setLoading(false);
   };
 
   return (
-    <div className="App">
-      <h1>Vision Builder</h1>
-      <div className="chat">
-        {messages.map((msg, i) => (
-          <div key={i} className={`message ${msg.role}`}>
-            <strong>{msg.role === "user" ? "You" : "Vision Builder"}:</strong> {msg.content}
+    <div className="app">
+      <header>
+        <img src="logo.png" alt="Vision Builder" className="logo" />
+        <h1>Vision Builder</h1>
+      </header>
+      <main ref={chatRef} className="chat-area">
+        {messages.map((msg, idx) => (
+          <div key={idx} className={`message ${msg.role}`}>
+            <div className="bubble">
+              {msg.content}
+              {msg.image_url && (
+                <img src={msg.image_url} alt="Generated visual" className="chat-image" />
+              )}
+            </div>
           </div>
         ))}
-        {image && <img src={image} alt="Generated" className="response-img" />}
-      </div>
-      <input
-        value={input}
-        onChange={e => setInput(e.target.value)}
-        placeholder="Ask Vision Builder..."
-      />
-      <button onClick={handleSend} disabled={loading}>
-        {loading ? "Thinking..." : "Send"}
-      </button>
+        {loading && <div className="loading">Thinking...</div>}
+      </main>
+      <footer>
+        <input
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          placeholder="Send a message..."
+        />
+        <button onClick={handleSend} disabled={loading}>Send</button>
+      </footer>
     </div>
   );
 }
