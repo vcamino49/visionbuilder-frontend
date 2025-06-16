@@ -1,9 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
-import './App.css';
+import React, { useState, useRef, useEffect } from "react";
+import "./App.css";
 
 function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [editingPrompt, setEditingPrompt] = useState("");
+  const [editingIndex, setEditingIndex] = useState(null);
   const [loading, setLoading] = useState(false);
   const chatRef = useRef(null);
 
@@ -11,41 +13,75 @@ function App() {
     chatRef.current?.scrollTo(0, chatRef.current.scrollHeight);
   }, [messages]);
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
-    const newMessages = [...messages, { role: 'user', content: input }];
-    setMessages(newMessages);
-    setInput("");
+  const sendPrompt = async (promptText, history) => {
     setLoading(true);
-
     const res = await fetch("https://back-end-done.onrender.com/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        prompt: input,
-        history: newMessages.map(m => `${m.role}: ${m.content}`).join("\n")
+        prompt: promptText,
+        history: history.map(m => m.role + ": " + m.content).join("\n")
       })
     });
     const data = await res.json();
-    setMessages([...newMessages, { role: 'assistant', content: data.text, image_url: data.image_url }]);
+    setMessages(prev => [...prev, {
+      role: "assistant",
+      content: data.text,
+      image_url: data.image_url,
+      originalPrompt: promptText
+    }]);
     setLoading(false);
+  };
+
+  const handleSend = async () => {
+    if (!input.trim()) return;
+
+    let newPrompt = input;
+    let basePrompt = input;
+
+    if (editingIndex !== null) {
+      basePrompt = messages[editingIndex].originalPrompt || messages[editingIndex].content;
+      newPrompt = basePrompt + ". " + input;
+    }
+
+    const newUserMsg = { role: "user", content: input };
+    const updatedMessages = [...messages, newUserMsg];
+
+    setMessages(updatedMessages);
+    setInput("");
+    setEditingPrompt("");
+    setEditingIndex(null);
+
+    await sendPrompt(newPrompt, updatedMessages);
+  };
+
+  const handleEdit = (index) => {
+    setEditingPrompt("");
+    setEditingIndex(index);
   };
 
   return (
     <div className="app">
-      <header><img src="logo.png" alt="Vision Builder" className="logo"/><h1>Vision Builder</h1></header>
-      <main ref={chatRef} className="chat">
-        {messages.map((m, i) => (
-          <div key={i} className={`message ${m.role}`}>
-            <div className="bubble">{m.content}</div>
-            {m.image_url && <img src={m.image_url} alt="Visual" className="chat-image" />}
+      <header><h1>Vision Builder</h1></header>
+      <main ref={chatRef} className="chat-area">
+        {messages.map((msg, i) => (
+          <div key={i} className={`message ${msg.role}`}>
+            <div className="bubble">
+              {msg.content}
+              {msg.image_url && (
+                <div>
+                  <img src={msg.image_url} alt="Generated" className="chat-image" />
+                  <button onClick={() => handleEdit(i)}>✏️ Edit</button>
+                </div>
+              )}
+            </div>
           </div>
         ))}
         {loading && <div className="bubble assistant">Thinking...</div>}
       </main>
       <footer>
-        <input value={input} onChange={e => setInput(e.target.value)} placeholder="Ask Vision Builder..." />
-        <button onClick={handleSend}>Send</button>
+        <input value={input} onChange={e => setInput(e.target.value)} placeholder="Send a prompt..." />
+        <button onClick={handleSend} disabled={loading}>Send</button>
       </footer>
     </div>
   );
