@@ -4,7 +4,6 @@ import "./App.css";
 function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [editingPrompt, setEditingPrompt] = useState("");
   const [editingIndex, setEditingIndex] = useState(null);
   const [loading, setLoading] = useState(false);
   const chatRef = useRef(null);
@@ -36,12 +35,12 @@ function App() {
   const handleSend = async () => {
     if (!input.trim()) return;
 
-    let newPrompt = input;
+    let finalPrompt = input;
     let basePrompt = input;
 
     if (editingIndex !== null) {
       basePrompt = messages[editingIndex].originalPrompt || messages[editingIndex].content;
-      newPrompt = basePrompt + ". " + input;
+      finalPrompt = basePrompt + ". " + input;
     }
 
     const newUserMsg = { role: "user", content: input };
@@ -49,14 +48,13 @@ function App() {
 
     setMessages(updatedMessages);
     setInput("");
-    setEditingPrompt("");
     setEditingIndex(null);
 
-    await sendPrompt(newPrompt, updatedMessages);
+    await sendPrompt(finalPrompt, updatedMessages);
   };
 
   const handleEdit = (index) => {
-    setEditingPrompt("");
+    setInput("");
     setEditingIndex(index);
   };
 
@@ -80,7 +78,16 @@ function App() {
         {loading && <div className="bubble assistant">Thinking...</div>}
       </main>
       <footer>
-        <input value={input} onChange={e => setInput(e.target.value)} placeholder="Send a prompt..." />
+        {editingIndex !== null && (
+          <div className="edit-context">
+            Editing image: <em>{messages[editingIndex]?.originalPrompt || messages[editingIndex]?.content}</em>
+          </div>
+        )}
+        <input
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          placeholder={editingIndex !== null ? "Refine this image..." : "Send a prompt..."}
+        />
         <button onClick={handleSend} disabled={loading}>Send</button>
       </footer>
     </div>
