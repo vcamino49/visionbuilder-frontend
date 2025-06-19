@@ -1,6 +1,6 @@
 
 {
-  "name": "vision-builder-chatgpt-ui",
+  "name": "vision-builder-full-ui",
   "version": "1.0.0",
   "private": true,
   "dependencies": {

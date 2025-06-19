@@ -1,1 +1,1 @@
-export default function App() { return <div className='chatgpt-ui'>Vision Builder (ChatGPT UI)</div>; }
+export default function App() { return <div>Vision Builder UI — Full App Ready</div>; }
