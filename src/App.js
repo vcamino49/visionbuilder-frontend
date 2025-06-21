@@ -1,1 +1,1 @@
-export default function App() { return <div>Vision Builder - Ready</div>; }
+export default function App() { return <div>Vision Builder UI Loaded</div>; }
